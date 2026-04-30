@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>晚餐吃什麼</title>
+    <style>
+        :root {
+            --bg-color: #F5F5DC;
+            --splash-bg: #8C735B;
+            --primary-brown: #8E735B;
+            --accent-gold: #C6A664;
+            --dark-brown: #5D4037;
+            --white: #FCF9F2;
+            --btn-gradient: linear-gradient(145deg, #C6A664, #A68A52);
+            /* 霓虹燈特效顏色 */
+            --neon-green: #2ECC71;
+            --neon-red: #E74C3C;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--dark-brown);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 啟動畫面 */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--splash-bg);
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.6s ease-out;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .pill-btn {
+            background: var(--btn-gradient);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            max-width: 250px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 20px 30px;
+            width: 100%;
+            max-width: 450px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 85vw;
+            max-width: 320px;
+            aspect-ratio: 1 / 1;
+            margin: 15px 0 25px;
+        }
+
+        #wheelCanvas { 
+            width: 100%; 
+            height: 100%; 
+            transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1); 
+        }
+
+        .arrow {
+            position: absolute;
+            top: -12px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 22px solid var(--dark-brown);
+            z-index: 10;
+        }
+
+        #result-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            text-align: center;
+            z-index: 150;
+            display: none;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+        }
+        #result-overlay.active { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .meal-text {
+            font-size: 1.5rem;
+            color: white;
+            background: var(--primary-brown);
+            padding: 8px 25px;
+            border-radius: 50px;
+            display: inline-block;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .stats-panel {
+            width: 100%;
+            background: rgba(140, 115, 91, 0.1); 
+            padding: 15px;
+            border-radius: 20px;
+            margin-top: 15px;
+            border: 1px solid rgba(140, 115, 91, 0.15);
+        }
+
+        .health-bar-container {
+            height: 16px;
+            background-color: #E6E1D6;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 8px 0;
+            border: 1px solid var(--primary-brown);
+        }
+
+        #health-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-brown), var(--accent-gold));
+            transition: width 0.8s ease;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 30, 20, 0.9);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal-content {
+            background: var(--white);
+            padding: 35px 25px;
+            border-radius: 35px;
+            text-align: center;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        /* 點心答案特效 */
+        #dessert-display {
+            font-size: 2rem;
+            font-weight: 900;
+            margin: 20px 0;
+            min-height: 1.5em;
+            transition: all 0.3s;
+        }
+
+        /* 霓虹綠特效 */
+        .neon-pass {
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-green), 0 0 30px var(--neon-green), 0 0 40px var(--neon-green);
+            animation: neon-glow 1.5s ease-in-out infinite alternate;
+        }
+
+        /* 霓虹紅/咖特效 */
+        .neon-fail {
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-red), 0 0 30px var(--neon-red), 0 0 40px var(--neon-red);
+            animation: neon-flicker 2s infinite;
+        }
+
+        @keyframes neon-glow {
+            from { opacity: 0.8; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.05); }
+        }
+
+        @keyframes neon-flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+            20%, 24%, 55% { opacity: 0.3; }
+        }
+
+        #fireworks {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 4000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <h1 style="font-size: 2.2rem; margin-bottom: 5px;">晚餐吃什麼</h1>
+        <p style="margin-bottom: 30px; opacity: 0.9; font-size: 1rem;">不再為下一餐糾結</p>
+        <button class="pill-btn" onclick="startGame()">開始遊戲</button>
+    </div>
+
+    <div class="container">
+        <div class="wheel-container">
+            <div class="arrow"></div>
+            <div id="wheel-wrapper">
+                <canvas id="wheelCanvas"></canvas>
+            </div>
+            <div id="result-overlay">
+                <div id="chosen-meal" class="meal-text"></div>
+            </div>
+        </div>
+        
+        <button class="pill-btn" id="spin-btn" onclick="spinMainWheel()">抽一個！</button>
+
+        <div class="stats-panel">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size: 0.85rem;">
+                <span>健康飲食累積</span>
+                <span id="count-text">0 / 3</span>
+            </div>
+            <div class="health-bar-container">
+                <div id="health-bar-fill"></div>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--dark-brown); font-weight: bold; margin-bottom: 4px;">
+                累積三次可抽命運點心獎勵
+            </p>
+            <p style="font-size: 0.65rem; color: var(--primary-brown); margin: 0; opacity: 0.8; line-height: 1.2;">
+                * 累計選項：雞肉飯、健康餐、越南菜、沙拉、生魚飯
+            </p>
+        </div>
+    </div>
+
+    <!-- 點心 Modal -->
+    <div id="dessert-modal" class="modal">
+        <div class="modal-content">
+            <span style="font-size: 3rem;">🍮</span>
+            <h2 style="color: var(--primary-brown); margin: 10px 0 5px 0;">命運點心時刻</h2>
+            <p style="font-size: 0.9rem; color: var(--primary-brown); margin-bottom: 15px; opacity: 0.8;">是否可吃點心？</p>
+            <div id="dessert-display"></div>
+            <button class="pill-btn" id="dessert-btn" onclick="spinDessertWheel()">啟動命運</button>
+        </div>
+    </div>
+
+    <canvas id="fireworks"></canvas>
+
+    <script>
+        const meals = ["雞肉飯", "健康餐", "越南菜", "小樂", "生魚飯", "自製沙拉", "滷味小吃", "鍋燒意麵"];
+        const healthyItems = ["雞肉飯", "健康餐", "越南菜", "自製沙拉", "生魚飯"];
+        const colors = ["#8E735B", "#A89076", "#C6A664", "#D2B48C", "#B38B6D", "#E3DAC9", "#70543E", "#A1887F"];
+        
+        let currentRotation = 0;
+        let isSpinning = false;
+        let healthCount = 0; 
+
+        function startGame() {
+            document.getElementById('splash-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; }, 600);
+        }
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const size = canvas.clientWidth;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.scale(dpr, dpr);
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 5;
+            const step = (Math.PI * 2) / meals.length;
+
+            meals.forEach((text, i) => {
+                ctx.beginPath();
+                ctx.fillStyle = colors[i];
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, i * step, (i + 1) * step);
+                ctx.fill();
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(i * step + step / 2);
+                ctx.fillStyle = "white";
+                ctx.font = `bold ${size/16}px Microsoft JhengHei`;
+                ctx.textAlign = "right";
+                ctx.fillText(text, radius - 15, size/45);
+                ctx.restore();
+            });
+        }
+
+        function updateUI() {
+            const fill = document.getElementById('health-bar-fill');
+            const progress = Math.min((healthCount / 3) * 100, 100);
+            document.getElementById('count-text').innerText = healthCount + " / 3";
+            fill.style.width = progress + "%";
+        }
+
+        function spinMainWheel() {
+            if (isSpinning) return;
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            
+            const randomExtra = Math.floor(Math.random() * 360) + 3600; 
+            currentRotation += randomExtra;
+            document.getElementById('wheelCanvas').style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                const actualDeg = currentRotation % 360;
+                const sliceSize = 360 / meals.length;
+                const index = Math.floor(((360 - (actualDeg % 360) + 270) % 360) / sliceSize);
+                const result = meals[index];
+
+                document.getElementById('wheel-wrapper').style.opacity = '0.15';
+                const overlay = document.getElementById('result-overlay');
+                document.getElementById('chosen-meal').innerText = result;
+                overlay.classList.add('active');
+                triggerFireworks();
+
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                    document.getElementById('wheel-wrapper').style.opacity = '1';
+                    document.getElementById('spin-btn').disabled = false;
+
+                    if (healthyItems.includes(result)) {
+                        healthCount++;
+                        updateUI();
+                        if (healthCount >= 3) {
+                            setTimeout(() => { document.getElementById('dessert-modal').style.display = 'flex'; }, 800);
+                        }
+                    }
+                }, 3000);
+            }, 4000);
+        }
+
+        function spinDessertWheel() {
+            const btn = document.getElementById('dessert-btn');
+            const display = document.getElementById('dessert-display');
+            btn.disabled = true;
+            display.innerText = "命運旋轉中...";
+            display.className = ""; // 清除特效
+
+            setTimeout(() => {
+                const options = ["可以啦哪次不行", "勸你各位再想想!"];
+                const finalResult = options[Math.floor(Math.random() * options.length)];
+                display.innerText = finalResult;
+                
+                // 核心更新：套用霓虹特效
+                if (finalResult.includes("可以")) {
+                    display.className = "neon-pass";
+                } else {
+                    display.className = "neon-fail";
+                }
+                
+                triggerFireworks();
+
+                setTimeout(() => {
+                    healthCount = 0; 
+                    updateUI();
+                    document.getElementById('dessert-modal').style.display = 'none';
+                    display.innerText = "";
+                    display.className = "";
+                    btn.disabled = false;
+                }, 4000);
+            }, 1500);
+        }
+
+        function triggerFireworks() {
+            const canvas = document.getElementById('fireworks');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            let particles = [];
+            const colors = ['#D4AF37', '#F5F5DC', '#FFFFFF', '#C6A664'];
+
+            for (let i = 0; i < 100; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 2;
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: Math.random() * 2 + 1,
+                    opacity: 1,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    friction: 0.96,
+                    gravity: 0.15
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p, i) => {
+                    p.vx *= p.friction;
+                    p.vy *= p.friction;
+                    p.vy += p.gravity;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.opacity -= 0.012;
+
+                    if (p.opacity > 0) {
+                        ctx.globalAlpha = p.opacity;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size * (Math.random() * 0.5 + 0.8), 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        particles.splice(i, 1);
+                    }
+                });
+                if (particles.length > 0) requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        window.onload = () => { drawWheel(); };
+        window.onresize = drawWheel;
+    </script>
+</body>
+</html>
