@@ -13,9 +13,9 @@
             --dark-brown: #5D4037;
             --white: #FCF9F2;
             --btn-gradient: linear-gradient(145deg, #C6A664, #A68A52);
-            /* 霓虹燈特效顏色 */
-            --neon-green: #2ECC71;
-            --neon-red: #E74C3C;
+            /* 霓虹燈特效顏色 - 降低飽和度使其更柔和 */
+            --neon-green: #27AE60;
+            --neon-red: #C0392B;
         }
 
         * { box-sizing: border-box; }
@@ -168,37 +168,43 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.3);
         }
 
-        /* 點心答案特效 */
+        /* 點心答案特效 - 柔和低亮度版 */
         #dessert-display {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 900;
             margin: 20px 0;
             min-height: 1.5em;
             transition: all 0.3s;
         }
 
-        /* 霓虹綠特效 */
         .neon-pass {
-            color: #fff;
-            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-green), 0 0 30px var(--neon-green), 0 0 40px var(--neon-green);
+            color: var(--neon-green); /* 文字改為有顏色，減少白色刺眼感 */
+            text-shadow: 
+                0 0 4px rgba(39, 174, 96, 0.3), 
+                0 0 10px rgba(39, 174, 96, 0.1);
             animation: neon-glow 1.5s ease-in-out infinite alternate;
         }
 
-        /* 霓虹紅/咖特效 */
         .neon-fail {
-            color: #fff;
-            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px var(--neon-red), 0 0 30px var(--neon-red), 0 0 40px var(--neon-red);
+            color: var(--neon-red); /* 文字改為有顏色，減少白色刺眼感 */
+            text-shadow: 
+                0 0 4px rgba(192, 57, 43, 0.3), 
+                0 0 10px rgba(192, 57, 43, 0.1);
             animation: neon-flicker 2s infinite;
         }
 
         @keyframes neon-glow {
-            from { opacity: 0.8; transform: scale(1); }
-            to { opacity: 1; transform: scale(1.05); }
+            from { opacity: 0.85; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.02); }
         }
 
         @keyframes neon-flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
-            20%, 24%, 55% { opacity: 0.3; }
+            0%, 18%, 22%, 25%, 53%, 57%, 100% { 
+                opacity: 1; 
+            }
+            20%, 24%, 55% { 
+                opacity: 0.7; /* 減少閃爍時的亮度落差 */
+            }
         }
 
         #fireworks {
@@ -353,14 +359,13 @@
             const display = document.getElementById('dessert-display');
             btn.disabled = true;
             display.innerText = "命運旋轉中...";
-            display.className = ""; // 清除特效
+            display.className = ""; 
 
             setTimeout(() => {
                 const options = ["可以啦哪次不行", "勸你各位再想想!"];
                 const finalResult = options[Math.floor(Math.random() * options.length)];
                 display.innerText = finalResult;
                 
-                // 核心更新：套用霓虹特效
                 if (finalResult.includes("可以")) {
                     display.className = "neon-pass";
                 } else {
